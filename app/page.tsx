@@ -30,6 +30,7 @@ export default function Home() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [siteData, setSiteData] = useState<SiteData>(DEFAULT_SITE_DATA);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasLoadedFromSupabase, setHasLoadedFromSupabase] = useState(false);
   
   // UI State
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -40,13 +41,16 @@ export default function Home() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Try to load from Supabase
+        // Try to load from Supabase with cache busting
         const { data: servicesData } = await supabase.from('services').select('*').order('id');
-        const { data: testimonialsData } = await supabase.from('testimonials').select('*').order('id');
+        const { data: testimonialsData } = await supabase.from('testimonials').select('*').order('id', { ascending: false });
         const { data: siteConfigData } = await supabase.from('site_config').select('*').eq('id', 1).single();
+
+        let loadedFromSupabase = false;
 
         if (servicesData && servicesData.length > 0) {
           setServices(servicesData);
+          loadedFromSupabase = true;
         } else {
           const savedServices = localStorage.getItem(STORAGE_KEYS.SERVICES);
           setServices(savedServices ? JSON.parse(savedServices) : DEFAULT_SERVICES);
@@ -54,6 +58,7 @@ export default function Home() {
 
         if (testimonialsData && testimonialsData.length > 0) {
           setTestimonials(testimonialsData);
+          loadedFromSupabase = true;
         } else {
           const savedTestimonials = localStorage.getItem(STORAGE_KEYS.TESTIMONIALS);
           setTestimonials(savedTestimonials ? JSON.parse(savedTestimonials) : DEFAULT_TESTIMONIALS);
@@ -61,10 +66,13 @@ export default function Home() {
 
         if (siteConfigData) {
           setSiteData(siteConfigData.data);
+          loadedFromSupabase = true;
         } else {
           const savedSiteData = localStorage.getItem(STORAGE_KEYS.SITE_DATA);
           setSiteData(savedSiteData ? JSON.parse(savedSiteData) : DEFAULT_SITE_DATA);
         }
+
+        setHasLoadedFromSupabase(loadedFromSupabase);
       } catch (error) {
         console.error('Error loading from Supabase:', error);
         // Fallback to localStorage
@@ -93,6 +101,10 @@ export default function Home() {
 
       // Supabase sync (debounced to avoid hitting API limits during typing)
       const timeoutId = setTimeout(async () => {
+        // Only sync to Supabase if we have successfully loaded from it or if we are the admin making changes
+        // This prevents default data from overwriting the database if the fetch fails
+        if (!hasLoadedFromSupabase) return;
+
         try {
           // Site Config
           await supabase.from('site_config').upsert({ id: 1, data: siteData });
@@ -113,7 +125,7 @@ export default function Home() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [services, testimonials, siteData, isLoaded]);
+  }, [services, testimonials, siteData, isLoaded, hasLoadedFromSupabase]);
 
   const showToast = (title: string, message: string) => {
     setToast({ title, message, isVisible: true });
@@ -126,10 +138,12 @@ export default function Home() {
 
   const updateTestimonials = (newTestimonials: Testimonial[]) => {
     setTestimonials(newTestimonials);
+    setHasLoadedFromSupabase(true); // Allow syncing after admin update
   };
 
   const updateSiteData = (newData: SiteData) => {
     setSiteData(newData);
+    setHasLoadedFromSupabase(true); // Allow syncing after admin update
   };
 
   if (!isLoaded) return null;
