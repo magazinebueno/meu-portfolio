@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   basePath: '/siasiteportfolio',
   assetPrefix: '/siasiteportfolio',
+  output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
   },
   // Allow access to remote image placeholder.
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -22,6 +24,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'xrswhxmuknyzqjctqkez.supabase.co',
         port: '',
         pathname: '/**',
       },

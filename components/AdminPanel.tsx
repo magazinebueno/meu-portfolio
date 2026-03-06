@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { 
   Fingerprint, Lock, LogOut, Cog, Briefcase, Home, ChartBar, 
   MessageSquare, Contact, Megaphone, Plus, Edit, Trash, 
-  Save, X, Check, Star, AlertTriangle, Loader2
+  Save, X, Check, Star, AlertTriangle, Loader2, Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Service, Testimonial, SiteData } from '@/lib/data';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 interface AdminPanelProps {
   services: Service[];
@@ -46,6 +48,36 @@ export default function AdminPanel({
 
   // Delete State
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; type: 'service' | 'testimonial'; name: string } | null>(null);
+
+  // Upload State
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (file: File, type: 'service' | 'testimonial') => {
+    try {
+      setIsUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${type}s/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('portfolio')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('portfolio')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      onShowToast('Erro no Upload', error.message || 'Não foi possível subir a imagem.');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -681,14 +713,52 @@ export default function AdminPanel({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label>URL da Imagem</label>
-                    <input 
-                      type="url" 
-                      value={editingService.image} 
-                      onChange={(e) => setEditingService({ ...editingService, image: e.target.value })}
-                      required 
-                      className="py-2"
-                    />
+                    <label>Imagem do Serviço</label>
+                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                      <div className="relative w-32 h-24 rounded-xl overflow-hidden border-2 border-primary/20 bg-dark flex-shrink-0">
+                        {editingService.image ? (
+                          <Image src={editingService.image} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-primary/40">
+                            <ImageIcon className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 w-full space-y-3">
+                        <div className="flex gap-2">
+                          <input 
+                            type="url" 
+                            placeholder="URL da Imagem (ou use o botão de upload)"
+                            value={editingService.image} 
+                            onChange={(e) => setEditingService({ ...editingService, image: e.target.value })}
+                            className="py-2 mb-0 flex-1"
+                          />
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const url = await handleImageUpload(file, 'service');
+                                if (url) setEditingService({ ...editingService, image: url });
+                              }
+                            }}
+                            className="hidden"
+                            id="service-image-upload"
+                            disabled={isUploading}
+                          />
+                          <label 
+                            htmlFor="service-image-upload"
+                            className={`flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl border-2 border-dashed border-primary/30 text-primary font-bold cursor-pointer hover:bg-primary/10 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {isUploading ? 'Enviando...' : 'Fazer Upload do Computador'}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <label>Descrição</label>
@@ -793,14 +863,53 @@ export default function AdminPanel({
                       required 
                     />
                   </div>
-                  <div>
-                    <label>URL da Foto</label>
-                    <input 
-                      type="url" 
-                      value={editingTestimonial.image} 
-                      onChange={(e) => setEditingTestimonial({ ...editingTestimonial, image: e.target.value })}
-                      required 
-                    />
+                  <div className="md:col-span-2">
+                    <label>Foto do Cliente</label>
+                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                      <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-primary/20 bg-dark flex-shrink-0">
+                        {editingTestimonial.image ? (
+                          <Image src={editingTestimonial.image} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-primary/40">
+                            <Contact className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 w-full space-y-3">
+                        <div className="flex gap-2">
+                          <input 
+                            type="url" 
+                            placeholder="URL da Foto (ou use o botão de upload)"
+                            value={editingTestimonial.image} 
+                            onChange={(e) => setEditingTestimonial({ ...editingTestimonial, image: e.target.value })}
+                            className="py-2 mb-0 flex-1"
+                          />
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const url = await handleImageUpload(file, 'testimonial');
+                                if (url) setEditingTestimonial({ ...editingTestimonial, image: url });
+                              }
+                            }}
+                            className="hidden"
+                            id="testimonial-image-upload"
+                            disabled={isUploading}
+                          />
+                          <label 
+                            htmlFor="testimonial-image-upload"
+                            className={`flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl border-2 border-dashed border-primary/30 text-primary font-bold cursor-pointer hover:bg-primary/10 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {isUploading ? 'Enviando...' : 'Fazer Upload do Computador'}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label>Nota (1-5)</label>
