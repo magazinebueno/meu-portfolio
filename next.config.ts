@@ -2,8 +2,6 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  basePath: '/siasiteportfolio',
-  assetPrefix: '/siasiteportfolio',
   output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
