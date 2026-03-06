@@ -259,7 +259,7 @@ export default function AdminPanel({
             exit={{ opacity: 0 }}
             className="admin-panel"
           >
-            <div className="admin-header">
+            <div className="admin-header sticky top-0 z-20 bg-dark/95 backdrop-blur-md border-b border-primary/10">
               <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -645,21 +645,21 @@ export default function AdminPanel({
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-card border border-primary/20 rounded-2xl md:rounded-3xl shadow-2xl max-w-2xl mx-auto p-6 md:p-8 relative w-full my-8 max-h-[90vh] overflow-y-auto"
+              className="bg-card border border-primary/20 rounded-2xl md:rounded-3xl shadow-2xl max-w-xl mx-auto p-5 md:p-6 relative w-full my-8 max-h-[90vh] overflow-y-auto"
             >
               <button onClick={() => setIsServiceModalOpen(false)} className="absolute top-4 right-4 text-primary/60 hover:text-primary z-10">
                 <X className="w-6 h-6" />
               </button>
               
-              <div className="mb-6">
-                <h3 className="text-2xl font-black italic text-text-secondary mb-2">
+              <div className="mb-4">
+                <h3 className="text-2xl font-black italic text-text-secondary mb-1">
                   {editingService.id ? 'Editar Serviço' : 'Novo Serviço'}
                 </h3>
-                <p className="text-text-primary/60 text-sm">Preencha os dados do serviço abaixo</p>
+                <p className="text-text-primary/60 text-xs">Preencha os dados do serviço abaixo</p>
               </div>
               
               <form onSubmit={handleServiceSubmit} className="admin-form">
-                <div className="grid md:grid-cols-2 gap-x-6 gap-y-2">
+                <div className="grid md:grid-cols-2 gap-x-4 gap-y-1">
                   <div className="md:col-span-2">
                     <label>Título do Serviço</label>
                     <input 
@@ -809,7 +809,7 @@ export default function AdminPanel({
                   </div>
                 </div>
                 
-                <div className="flex gap-3 mt-8">
+                <div className="flex gap-3 mt-6">
                   <button type="button" onClick={() => setIsServiceModalOpen(false)} className="flex-1 btn-secondary py-3 rounded-xl font-bold">
                     Cancelar
                   </button>
@@ -826,25 +826,25 @@ export default function AdminPanel({
       {/* Testimonial Edit Modal */}
       <AnimatePresence>
         {isTestimonialModalOpen && editingTestimonial && (
-          <div className="fixed inset-0 z-[100] modal-overlay overflow-y-auto p-4 flex items-center justify-center">
+          <div className="fixed inset-0 z-[100] modal-overlay overflow-y-auto p-4 flex items-start justify-center">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-card border border-primary/20 rounded-2xl md:rounded-3xl shadow-2xl max-w-2xl mx-auto p-6 md:p-8 relative w-full"
+              className="bg-card border border-primary/20 rounded-2xl md:rounded-3xl shadow-2xl max-w-xl mx-auto p-5 md:p-6 relative w-full my-8 max-h-[90vh] overflow-y-auto"
             >
               <button onClick={() => setIsTestimonialModalOpen(false)} className="absolute top-4 right-4 text-primary/60 hover:text-primary">
                 <X className="w-6 h-6" />
               </button>
               
-              <div className="mb-6">
-                <h3 className="text-2xl font-black italic text-text-secondary mb-2">
+              <div className="mb-4">
+                <h3 className="text-2xl font-black italic text-text-secondary mb-1">
                   {editingTestimonial.id ? 'Editar Depoimento' : 'Novo Depoimento'}
                 </h3>
               </div>
               
               <form onSubmit={handleTestimonialSubmit} className="admin-form">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-3">
                   <div>
                     <label>Nome do Cliente</label>
                     <input 
@@ -924,7 +924,7 @@ export default function AdminPanel({
                   <div className="md:col-span-2">
                     <label>Depoimento</label>
                     <textarea 
-                      rows={4} 
+                      rows={3} 
                       value={editingTestimonial.text} 
                       onChange={(e) => setEditingTestimonial({ ...editingTestimonial, text: e.target.value })}
                       required 
@@ -932,7 +932,7 @@ export default function AdminPanel({
                   </div>
                 </div>
                 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-3 mt-4">
                   <button type="button" onClick={() => setIsTestimonialModalOpen(false)} className="flex-1 btn-secondary py-3 rounded-xl font-bold">
                     Cancelar
                   </button>
