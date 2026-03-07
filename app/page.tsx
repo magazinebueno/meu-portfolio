@@ -120,23 +120,38 @@ export default function Home() {
   const handleUpsertService = async (service: Service) => {
     setIsSyncing(true);
     try {
-      const { error } = await supabase.from('services').upsert(service);
+      // If ID is very large, it's a temporary ID from Date.now(), so we let Supabase generate a real one
+      const isNew = service.id > 2147483647;
+      const { id, ...serviceData } = service;
+      
+      let result;
+      if (isNew) {
+        result = await supabase.from('services').insert(serviceData).select().single();
+      } else {
+        result = await supabase.from('services').upsert(service).select().single();
+      }
+
+      const { data, error } = result;
       if (error) throw error;
       
+      const savedService = data as Service;
       const updated = [...services];
       const index = updated.findIndex(s => s.id === service.id);
+      
       if (index !== -1) {
-        updated[index] = service;
+        updated[index] = savedService;
       } else {
-        updated.push(service);
+        updated.push(savedService);
       }
       
       setServices(updated);
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(updated));
       setHasLoadedFromSupabase(true);
+      return true;
     } catch (error) {
-      console.error('Error upserting service:', error);
+      console.error('Error saving service:', error);
       showToast('Erro', 'Não foi possível salvar o serviço.');
+      return false;
     } finally {
       setIsSyncing(false);
     }
@@ -152,9 +167,11 @@ export default function Home() {
       setServices(updated);
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(updated));
       setHasLoadedFromSupabase(true);
+      return true;
     } catch (error) {
       console.error('Error deleting service:', error);
       showToast('Erro', 'Não foi possível excluir o serviço.');
+      return false;
     } finally {
       setIsSyncing(false);
     }
@@ -163,23 +180,38 @@ export default function Home() {
   const handleUpsertTestimonial = async (testimonial: Testimonial) => {
     setIsSyncing(true);
     try {
-      const { error } = await supabase.from('testimonials').upsert(testimonial);
+      // If ID is very large, it's a temporary ID from Date.now(), so we let Supabase generate a real one
+      const isNew = testimonial.id > 2147483647;
+      const { id, ...testimonialData } = testimonial;
+      
+      let result;
+      if (isNew) {
+        result = await supabase.from('testimonials').insert(testimonialData).select().single();
+      } else {
+        result = await supabase.from('testimonials').upsert(testimonial).select().single();
+      }
+
+      const { data, error } = result;
       if (error) throw error;
       
+      const savedTestimonial = data as Testimonial;
       const updated = [...testimonials];
       const index = updated.findIndex(t => t.id === testimonial.id);
+      
       if (index !== -1) {
-        updated[index] = testimonial;
+        updated[index] = savedTestimonial;
       } else {
-        updated.unshift(testimonial);
+        updated.unshift(savedTestimonial);
       }
       
       setTestimonials(updated);
       localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(updated));
       setHasLoadedFromSupabase(true);
+      return true;
     } catch (error) {
-      console.error('Error upserting testimonial:', error);
+      console.error('Error saving testimonial:', error);
       showToast('Erro', 'Não foi possível salvar o depoimento.');
+      return false;
     } finally {
       setIsSyncing(false);
     }
@@ -195,9 +227,11 @@ export default function Home() {
       setTestimonials(updated);
       localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(updated));
       setHasLoadedFromSupabase(true);
+      return true;
     } catch (error) {
       console.error('Error deleting testimonial:', error);
       showToast('Erro', 'Não foi possível excluir o depoimento.');
+      return false;
     } finally {
       setIsSyncing(false);
     }
@@ -211,9 +245,11 @@ export default function Home() {
       if (error) throw error;
       localStorage.setItem(STORAGE_KEYS.SITE_DATA, JSON.stringify(newData));
       setHasLoadedFromSupabase(true);
+      return true;
     } catch (error) {
       console.error('Error updating site config:', error);
       showToast('Erro', 'Não foi possível salvar as configurações.');
+      return false;
     } finally {
       setIsSyncing(false);
     }

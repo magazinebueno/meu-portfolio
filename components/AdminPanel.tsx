@@ -128,9 +128,11 @@ export default function AdminPanel({
     e.preventDefault();
     if (!editingService) return;
 
-    await onUpsertService(editingService as Service);
-    setIsServiceModalOpen(false);
-    onShowToast('Sucesso', 'Serviço atualizado');
+    const success = await onUpsertService(editingService as Service);
+    if (success) {
+      setIsServiceModalOpen(false);
+      onShowToast('Sucesso', 'Serviço salvo com sucesso');
+    }
   };
 
   // Testimonial Handlers
@@ -155,22 +157,27 @@ export default function AdminPanel({
     e.preventDefault();
     if (!editingTestimonial) return;
 
-    await onUpsertTestimonial(editingTestimonial as Testimonial);
-    setIsTestimonialModalOpen(false);
-    onShowToast('Sucesso', 'Depoimento atualizado');
+    const success = await onUpsertTestimonial(editingTestimonial as Testimonial);
+    if (success) {
+      setIsTestimonialModalOpen(false);
+      onShowToast('Sucesso', 'Depoimento salvo com sucesso');
+    }
   };
 
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
 
+    let success = false;
     if (deleteConfirm.type === 'service') {
-      await onDeleteService(deleteConfirm.id);
+      success = await onDeleteService(deleteConfirm.id);
     } else {
-      await onDeleteTestimonial(deleteConfirm.id);
+      success = await onDeleteTestimonial(deleteConfirm.id);
     }
 
-    setDeleteConfirm(null);
-    onShowToast('Sucesso', 'Item excluído');
+    if (success) {
+      setDeleteConfirm(null);
+      onShowToast('Sucesso', 'Item excluído');
+    }
   };
 
   return (
