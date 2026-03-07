@@ -16,18 +16,24 @@ interface AdminPanelProps {
   services: Service[];
   testimonials: Testimonial[];
   siteData: SiteData;
-  onUpdateServices: (services: Service[]) => void;
-  onUpdateTestimonials: (testimonials: Testimonial[]) => void;
-  onUpdateSiteData: (data: SiteData) => void;
+  onUpsertService: (service: Service) => Promise<void>;
+  onDeleteService: (id: number) => Promise<void>;
+  onUpsertTestimonial: (testimonial: Testimonial) => Promise<void>;
+  onDeleteTestimonial: (id: number) => Promise<void>;
+  onUpdateSiteData: (data: SiteData) => Promise<void>;
   onShowToast: (title: string, message: string) => void;
+  isSyncing: boolean;
 }
 
 const CATEGORIES = ['Sites', 'Identidade Visual', 'Social Media', 'Marketing'];
 
 export default function AdminPanel({
   services, testimonials, siteData,
-  onUpdateServices, onUpdateTestimonials, onUpdateSiteData,
-  onShowToast
+  onUpsertService, onDeleteService, 
+  onUpsertTestimonial, onDeleteTestimonial,
+  onUpdateSiteData,
+  onShowToast,
+  isSyncing
 }: AdminPanelProps) {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -118,20 +124,11 @@ export default function AdminPanel({
     setIsServiceModalOpen(true);
   };
 
-  const handleServiceSubmit = (e: React.FormEvent) => {
+  const handleServiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingService) return;
 
-    const updatedServices = [...services];
-    const index = updatedServices.findIndex(s => s.id === editingService.id);
-
-    if (index !== -1) {
-      updatedServices[index] = editingService as Service;
-    } else {
-      updatedServices.push(editingService as Service);
-    }
-
-    onUpdateServices(updatedServices);
+    await onUpsertService(editingService as Service);
     setIsServiceModalOpen(false);
     onShowToast('Sucesso', 'Serviço atualizado');
   };
@@ -154,31 +151,22 @@ export default function AdminPanel({
     setIsTestimonialModalOpen(true);
   };
 
-  const handleTestimonialSubmit = (e: React.FormEvent) => {
+  const handleTestimonialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTestimonial) return;
 
-    const updatedTestimonials = [...testimonials];
-    const index = updatedTestimonials.findIndex(t => t.id === editingTestimonial.id);
-
-    if (index !== -1) {
-      updatedTestimonials[index] = editingTestimonial as Testimonial;
-    } else {
-      updatedTestimonials.push(editingTestimonial as Testimonial);
-    }
-
-    onUpdateTestimonials(updatedTestimonials);
+    await onUpsertTestimonial(editingTestimonial as Testimonial);
     setIsTestimonialModalOpen(false);
     onShowToast('Sucesso', 'Depoimento atualizado');
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteConfirm) return;
 
     if (deleteConfirm.type === 'service') {
-      onUpdateServices(services.filter(s => s.id !== deleteConfirm.id));
+      await onDeleteService(deleteConfirm.id);
     } else {
-      onUpdateTestimonials(testimonials.filter(t => t.id !== deleteConfirm.id));
+      await onDeleteTestimonial(deleteConfirm.id);
     }
 
     setDeleteConfirm(null);
@@ -189,8 +177,9 @@ export default function AdminPanel({
     <>
       {/* Admin Fingerprint Icon */}
       {!isPanelOpen && (
-        <div className="admin-fingerprint" onClick={() => setIsLoginOpen(true)} title="Área Administrativa">
+        <div className="admin-fingerprint flex items-center gap-2" onClick={() => setIsLoginOpen(true)} title="Área Administrativa">
           <Fingerprint className="w-6 h-6 text-primary" />
+          {isSyncing && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
         </div>
       )}
 

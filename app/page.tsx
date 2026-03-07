@@ -31,6 +31,7 @@ export default function Home() {
   const [siteData, setSiteData] = useState<SiteData>(DEFAULT_SITE_DATA);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasLoadedFromSupabase, setHasLoadedFromSupabase] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // UI State
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -89,61 +90,133 @@ export default function Home() {
     };
 
     loadData();
+
+    // Subscribe to Realtime changes
+    const servicesChannel = supabase.channel('services-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, () => loadData())
+      .subscribe();
+
+    const testimonialsChannel = supabase.channel('testimonials-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'testimonials' }, () => loadData())
+      .subscribe();
+
+    const siteConfigChannel = supabase.channel('site-config-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_config' }, () => loadData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(servicesChannel);
+      supabase.removeChannel(testimonialsChannel);
+      supabase.removeChannel(siteConfigChannel);
+    };
   }, []);
-
-  // Auto-save to localStorage and Supabase
-  useEffect(() => {
-    if (isLoaded) {
-      // LocalStorage sync (immediate)
-      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
-      localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(testimonials));
-      localStorage.setItem(STORAGE_KEYS.SITE_DATA, JSON.stringify(siteData));
-
-      // Supabase sync (debounced to avoid hitting API limits during typing)
-      const timeoutId = setTimeout(async () => {
-        // Only sync to Supabase if we have successfully loaded from it or if we are the admin making changes
-        // This prevents default data from overwriting the database if the fetch fails
-        if (!hasLoadedFromSupabase) return;
-
-        try {
-          // Site Config
-          await supabase.from('site_config').upsert({ id: 1, data: siteData });
-
-          // Services
-          if (services.length > 0) {
-            await supabase.from('services').upsert(services);
-          }
-
-          // Testimonials
-          if (testimonials.length > 0) {
-            await supabase.from('testimonials').upsert(testimonials);
-          }
-        } catch (error) {
-          console.error('Supabase sync error:', error);
-        }
-      }, 2000); // 2 second debounce
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [services, testimonials, siteData, isLoaded, hasLoadedFromSupabase]);
 
   const showToast = (title: string, message: string) => {
     setToast({ title, message, isVisible: true });
     setTimeout(() => setToast(prev => ({ ...prev, isVisible: false })), 3000);
   };
 
-  const updateServices = (newServices: Service[]) => {
-    setServices(newServices);
+  // Surgical Update Handlers
+  const handleUpsertService = async (service: Service) => {
+    setIsSyncing(true);
+    try {
+      const { error } = await supabase.from('services').upsert(service);
+      if (error) throw error;
+      
+      const updated = [...services];
+      const index = updated.findIndex(s => s.id === service.id);
+      if (index !== -1) {
+        updated[index] = service;
+      } else {
+        updated.push(service);
+      }
+      
+      setServices(updated);
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(updated));
+      setHasLoadedFromSupabase(true);
+    } catch (error) {
+      console.error('Error upserting service:', error);
+      showToast('Erro', 'Não foi possível salvar o serviço.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const updateTestimonials = (newTestimonials: Testimonial[]) => {
-    setTestimonials(newTestimonials);
-    setHasLoadedFromSupabase(true); // Allow syncing after admin update
+  const handleDeleteService = async (id: number) => {
+    setIsSyncing(true);
+    try {
+      const { error } = await supabase.from('services').delete().eq('id', id);
+      if (error) throw error;
+      
+      const updated = services.filter(s => s.id !== id);
+      setServices(updated);
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(updated));
+      setHasLoadedFromSupabase(true);
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      showToast('Erro', 'Não foi possível excluir o serviço.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const updateSiteData = (newData: SiteData) => {
+  const handleUpsertTestimonial = async (testimonial: Testimonial) => {
+    setIsSyncing(true);
+    try {
+      const { error } = await supabase.from('testimonials').upsert(testimonial);
+      if (error) throw error;
+      
+      const updated = [...testimonials];
+      const index = updated.findIndex(t => t.id === testimonial.id);
+      if (index !== -1) {
+        updated[index] = testimonial;
+      } else {
+        updated.unshift(testimonial);
+      }
+      
+      setTestimonials(updated);
+      localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(updated));
+      setHasLoadedFromSupabase(true);
+    } catch (error) {
+      console.error('Error upserting testimonial:', error);
+      showToast('Erro', 'Não foi possível salvar o depoimento.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleDeleteTestimonial = async (id: number) => {
+    setIsSyncing(true);
+    try {
+      const { error } = await supabase.from('testimonials').delete().eq('id', id);
+      if (error) throw error;
+      
+      const updated = testimonials.filter(t => t.id !== id);
+      setTestimonials(updated);
+      localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(updated));
+      setHasLoadedFromSupabase(true);
+    } catch (error) {
+      console.error('Error deleting testimonial:', error);
+      showToast('Erro', 'Não foi possível excluir o depoimento.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleUpdateSiteData = async (newData: SiteData) => {
     setSiteData(newData);
-    setHasLoadedFromSupabase(true); // Allow syncing after admin update
+    setIsSyncing(true);
+    try {
+      const { error } = await supabase.from('site_config').upsert({ id: 1, data: newData });
+      if (error) throw error;
+      localStorage.setItem(STORAGE_KEYS.SITE_DATA, JSON.stringify(newData));
+      setHasLoadedFromSupabase(true);
+    } catch (error) {
+      console.error('Error updating site config:', error);
+      showToast('Erro', 'Não foi possível salvar as configurações.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   if (!isLoaded) return null;
@@ -251,10 +324,13 @@ export default function Home() {
         services={services}
         testimonials={testimonials}
         siteData={siteData}
-        onUpdateServices={updateServices}
-        onUpdateTestimonials={updateTestimonials}
-        onUpdateSiteData={updateSiteData}
+        onUpsertService={handleUpsertService}
+        onDeleteService={handleDeleteService}
+        onUpsertTestimonial={handleUpsertTestimonial}
+        onDeleteTestimonial={handleDeleteTestimonial}
+        onUpdateSiteData={handleUpdateSiteData}
         onShowToast={showToast}
+        isSyncing={isSyncing}
       />
       
       <Toast {...toast} />
