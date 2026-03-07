@@ -16,16 +16,17 @@ interface AdminPanelProps {
   services: Service[];
   testimonials: Testimonial[];
   siteData: SiteData;
-  onUpsertService: (service: Service) => Promise<void>;
-  onDeleteService: (id: number) => Promise<void>;
-  onUpsertTestimonial: (testimonial: Testimonial) => Promise<void>;
-  onDeleteTestimonial: (id: number) => Promise<void>;
-  onUpdateSiteData: (data: SiteData) => Promise<void>;
+  onUpsertService: (service: Service) => Promise<boolean>;
+  onDeleteService: (id: number) => Promise<boolean>;
+  onUpsertTestimonial: (testimonial: Testimonial) => Promise<boolean>;
+  onDeleteTestimonial: (id: number) => Promise<boolean>;
+  onUpdateSiteData: (data: SiteData) => Promise<boolean>;
   onShowToast: (title: string, message: string) => void;
   isSyncing: boolean;
 }
 
 const CATEGORIES = ['Sites', 'Identidade Visual', 'Social Media', 'Marketing'];
+const FALLBACK_IMAGE = 'https://picsum.photos/seed/sia/800/600';
 
 export default function AdminPanel({
   services, testimonials, siteData,
@@ -214,7 +215,7 @@ export default function AdminPanel({
                     <label className="block text-primary text-xs font-bold uppercase mb-2">Usuário</label>
                     <input 
                       type="text" 
-                      value={user}
+                      value={user ?? ""}
                       onChange={(e) => setUser(e.target.value)}
                       className="w-full bg-dark/50 border border-primary/30 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" 
                       placeholder="Digite o usuário" 
@@ -225,7 +226,7 @@ export default function AdminPanel({
                     <label className="block text-primary text-xs font-bold uppercase mb-2">Senha</label>
                     <input 
                       type="password" 
-                      value={pass}
+                      value={pass ?? ""}
                       onChange={(e) => setPass(e.target.value)}
                       className="w-full bg-dark/50 border border-primary/30 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" 
                       placeholder="Digite a senha" 
@@ -330,7 +331,7 @@ export default function AdminPanel({
                               <td className="font-mono text-primary">#{s.id}</td>
                               <td>
                                 <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-primary/20">
-                                  <Image src={s.image} alt={s.title} fill className="object-cover" referrerPolicy="no-referrer" />
+                                  <Image src={s.image || FALLBACK_IMAGE} alt={s.title} fill className="object-cover" referrerPolicy="no-referrer" />
                                 </div>
                               </td>
                               <td className="font-bold text-text-secondary">{s.title}</td>
@@ -371,7 +372,7 @@ export default function AdminPanel({
                           <label>Tagline Superior</label>
                           <input 
                             type="text" 
-                            value={siteData.hero.tagline} 
+                            value={siteData.hero.tagline ?? ""} 
                             onChange={(e) => onUpdateSiteData({ ...siteData, hero: { ...siteData.hero, tagline: e.target.value } })}
                           />
                         </div>
@@ -379,7 +380,7 @@ export default function AdminPanel({
                           <label>Título Principal - Linha 1</label>
                           <input 
                             type="text" 
-                            value={siteData.hero.title1}
+                            value={siteData.hero.title1 ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, hero: { ...siteData.hero, title1: e.target.value } })}
                           />
                         </div>
@@ -387,7 +388,7 @@ export default function AdminPanel({
                           <label>Título Principal - Linha 2</label>
                           <input 
                             type="text" 
-                            value={siteData.hero.title2}
+                            value={siteData.hero.title2 ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, hero: { ...siteData.hero, title2: e.target.value } })}
                           />
                         </div>
@@ -395,7 +396,7 @@ export default function AdminPanel({
                           <label>Descrição</label>
                           <textarea 
                             rows={3} 
-                            value={siteData.hero.description}
+                            value={siteData.hero.description ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, hero: { ...siteData.hero, description: e.target.value } })}
                           />
                         </div>
@@ -403,7 +404,7 @@ export default function AdminPanel({
                           <label>Texto Botão Principal</label>
                           <input 
                             type="text" 
-                            value={siteData.hero.btn1}
+                            value={siteData.hero.btn1 ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, hero: { ...siteData.hero, btn1: e.target.value } })}
                           />
                         </div>
@@ -411,7 +412,7 @@ export default function AdminPanel({
                           <label>Texto Botão Secundário</label>
                           <input 
                             type="text" 
-                            value={siteData.hero.btn2}
+                            value={siteData.hero.btn2 ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, hero: { ...siteData.hero, btn2: e.target.value } })}
                           />
                         </div>
@@ -436,7 +437,7 @@ export default function AdminPanel({
                           <label>Projetos Realizados</label>
                           <input 
                             type="text" 
-                            value={siteData.stats.projects}
+                            value={siteData.stats.projects ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, stats: { ...siteData.stats, projects: e.target.value } })}
                           />
                         </div>
@@ -444,7 +445,7 @@ export default function AdminPanel({
                           <label>Clientes Atendidos</label>
                           <input 
                             type="text" 
-                            value={siteData.stats.clients}
+                            value={siteData.stats.clients ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, stats: { ...siteData.stats, clients: e.target.value } })}
                           />
                         </div>
@@ -452,7 +453,7 @@ export default function AdminPanel({
                           <label>Avaliação Média</label>
                           <input 
                             type="text" 
-                            value={siteData.stats.rating}
+                            value={siteData.stats.rating ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, stats: { ...siteData.stats, rating: e.target.value } })}
                           />
                         </div>
@@ -493,7 +494,7 @@ export default function AdminPanel({
                             <tr key={t.id}>
                               <td>
                                 <div className="relative w-10 h-10 rounded-full overflow-hidden border border-primary/20">
-                                  <Image src={t.image} alt={t.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                                  <Image src={t.image || FALLBACK_IMAGE} alt={t.name} fill className="object-cover" referrerPolicy="no-referrer" />
                                 </div>
                               </td>
                               <td className="font-bold text-text-secondary">{t.name}</td>
@@ -538,7 +539,7 @@ export default function AdminPanel({
                           <label>WhatsApp (com DDD)</label>
                           <input 
                             type="text" 
-                            value={siteData.contact.whatsapp}
+                            value={siteData.contact.whatsapp ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, contact: { ...siteData.contact, whatsapp: e.target.value } })}
                           />
                         </div>
@@ -546,7 +547,7 @@ export default function AdminPanel({
                           <label>Telefone Formatado</label>
                           <input 
                             type="text" 
-                            value={siteData.contact.phone}
+                            value={siteData.contact.phone ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, contact: { ...siteData.contact, phone: e.target.value } })}
                           />
                         </div>
@@ -554,7 +555,7 @@ export default function AdminPanel({
                           <label>E-mail</label>
                           <input 
                             type="email" 
-                            value={siteData.contact.email}
+                            value={siteData.contact.email ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, contact: { ...siteData.contact, email: e.target.value } })}
                           />
                         </div>
@@ -562,7 +563,7 @@ export default function AdminPanel({
                           <label>Endereço</label>
                           <input 
                             type="text" 
-                            value={siteData.contact.address}
+                            value={siteData.contact.address ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, contact: { ...siteData.contact, address: e.target.value } })}
                           />
                         </div>
@@ -570,7 +571,7 @@ export default function AdminPanel({
                           <label>Instagram</label>
                           <input 
                             type="text" 
-                            value={siteData.contact.instagram}
+                            value={siteData.contact.instagram ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, contact: { ...siteData.contact, instagram: e.target.value } })}
                           />
                         </div>
@@ -578,7 +579,7 @@ export default function AdminPanel({
                           <label>Facebook</label>
                           <input 
                             type="text" 
-                            value={siteData.contact.facebook}
+                            value={siteData.contact.facebook ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, contact: { ...siteData.contact, facebook: e.target.value } })}
                           />
                         </div>
@@ -603,7 +604,7 @@ export default function AdminPanel({
                           <label>Título</label>
                           <input 
                             type="text" 
-                            value={siteData.cta.title}
+                            value={siteData.cta.title ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, cta: { ...siteData.cta, title: e.target.value } })}
                           />
                         </div>
@@ -611,7 +612,7 @@ export default function AdminPanel({
                           <label>Descrição</label>
                           <textarea 
                             rows={3} 
-                            value={siteData.cta.description}
+                            value={siteData.cta.description ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, cta: { ...siteData.cta, description: e.target.value } })}
                           />
                         </div>
@@ -619,7 +620,7 @@ export default function AdminPanel({
                           <label>Texto do Botão</label>
                           <input 
                             type="text" 
-                            value={siteData.cta.button}
+                            value={siteData.cta.button ?? ""}
                             onChange={(e) => onUpdateSiteData({ ...siteData, cta: { ...siteData.cta, button: e.target.value } })}
                           />
                         </div>
@@ -660,7 +661,7 @@ export default function AdminPanel({
                     <label>Título do Serviço</label>
                     <input 
                       type="text" 
-                      value={editingService.title} 
+                      value={editingService.title ?? ""} 
                       onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
                       required 
                       className="py-2"
@@ -669,7 +670,7 @@ export default function AdminPanel({
                   <div>
                     <label>Categoria</label>
                     <select 
-                      value={editingService.category} 
+                      value={editingService.category ?? ""} 
                       onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
                       required
                       className="py-2"
@@ -681,7 +682,7 @@ export default function AdminPanel({
                     <label>Preço (R$)</label>
                     <input 
                       type="number" 
-                      value={editingService.price} 
+                      value={editingService.price ?? 0} 
                       onChange={(e) => setEditingService({ ...editingService, price: parseFloat(e.target.value) })}
                       step="0.01" 
                       required 
@@ -692,7 +693,7 @@ export default function AdminPanel({
                     <label>Duração</label>
                     <input 
                       type="text" 
-                      value={editingService.duration} 
+                      value={editingService.duration ?? ""} 
                       onChange={(e) => setEditingService({ ...editingService, duration: e.target.value })}
                       required 
                       className="py-2"
@@ -702,7 +703,7 @@ export default function AdminPanel({
                     <label>Revisões</label>
                     <input 
                       type="text" 
-                      value={editingService.revisions} 
+                      value={editingService.revisions ?? ""} 
                       onChange={(e) => setEditingService({ ...editingService, revisions: e.target.value })}
                       required 
                       className="py-2"
@@ -713,7 +714,7 @@ export default function AdminPanel({
                     <div className="flex flex-col md:flex-row gap-4 items-start">
                       <div className="relative w-32 h-24 rounded-xl overflow-hidden border-2 border-primary/20 bg-dark flex-shrink-0">
                         {editingService.image ? (
-                          <Image src={editingService.image} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" />
+                          <Image src={editingService.image || FALLBACK_IMAGE} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-primary/40">
                             <ImageIcon className="w-8 h-8" />
@@ -725,7 +726,7 @@ export default function AdminPanel({
                           <input 
                             type="url" 
                             placeholder="URL da Imagem (ou use o botão de upload)"
-                            value={editingService.image} 
+                            value={editingService.image ?? ""} 
                             onChange={(e) => setEditingService({ ...editingService, image: e.target.value })}
                             className="py-2 mb-0 flex-1"
                           />
@@ -760,7 +761,7 @@ export default function AdminPanel({
                     <label>Descrição</label>
                     <textarea 
                       rows={2} 
-                      value={editingService.description} 
+                      value={editingService.description ?? ""} 
                       onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
                       required 
                       className="py-2"
@@ -773,7 +774,7 @@ export default function AdminPanel({
                         <div key={idx} className="flex gap-2">
                           <input 
                             type="text" 
-                            value={feat} 
+                            value={feat ?? ""} 
                             onChange={(e) => {
                               const newFeatures = [...(editingService.features || [])];
                               newFeatures[idx] = e.target.value;
@@ -809,8 +810,16 @@ export default function AdminPanel({
                   <button type="button" onClick={() => setIsServiceModalOpen(false)} className="flex-1 btn-secondary py-3 rounded-xl font-bold">
                     Cancelar
                   </button>
-                  <button type="submit" className="flex-1 btn-primary py-3 rounded-xl font-black uppercase italic">
-                    Salvar
+                  <button 
+                    type="submit" 
+                    disabled={isSyncing || isUploading}
+                    className="flex-1 btn-primary py-3 rounded-xl font-black uppercase italic disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {(isSyncing || isUploading) ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      'Salvar'
+                    )}
                   </button>
                 </div>
               </form>
@@ -845,7 +854,7 @@ export default function AdminPanel({
                     <label>Nome do Cliente</label>
                     <input 
                       type="text" 
-                      value={editingTestimonial.name} 
+                      value={editingTestimonial.name ?? ""} 
                       onChange={(e) => setEditingTestimonial({ ...editingTestimonial, name: e.target.value })}
                       required 
                     />
@@ -854,7 +863,7 @@ export default function AdminPanel({
                     <label>Nome da Empresa</label>
                     <input 
                       type="text" 
-                      value={editingTestimonial.company} 
+                      value={editingTestimonial.company ?? ""} 
                       onChange={(e) => setEditingTestimonial({ ...editingTestimonial, company: e.target.value })}
                       required 
                     />
@@ -864,7 +873,7 @@ export default function AdminPanel({
                     <div className="flex flex-col md:flex-row gap-4 items-start">
                       <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-primary/20 bg-dark flex-shrink-0">
                         {editingTestimonial.image ? (
-                          <Image src={editingTestimonial.image} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" />
+                          <Image src={editingTestimonial.image || FALLBACK_IMAGE} alt="Preview" fill className="object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-primary/40">
                             <Contact className="w-8 h-8" />
@@ -876,7 +885,7 @@ export default function AdminPanel({
                           <input 
                             type="url" 
                             placeholder="URL da Foto (ou use o botão de upload)"
-                            value={editingTestimonial.image} 
+                            value={editingTestimonial.image ?? ""} 
                             onChange={(e) => setEditingTestimonial({ ...editingTestimonial, image: e.target.value })}
                             className="py-2 mb-0 flex-1"
                           />
@@ -910,7 +919,7 @@ export default function AdminPanel({
                   <div>
                     <label>Nota (1-5)</label>
                     <select 
-                      value={editingTestimonial.rating} 
+                      value={editingTestimonial.rating ?? 5} 
                       onChange={(e) => setEditingTestimonial({ ...editingTestimonial, rating: parseInt(e.target.value) })}
                       required
                     >
@@ -921,7 +930,7 @@ export default function AdminPanel({
                     <label>Depoimento</label>
                     <textarea 
                       rows={3} 
-                      value={editingTestimonial.text} 
+                      value={editingTestimonial.text ?? ""} 
                       onChange={(e) => setEditingTestimonial({ ...editingTestimonial, text: e.target.value })}
                       required 
                     />
@@ -932,8 +941,16 @@ export default function AdminPanel({
                   <button type="button" onClick={() => setIsTestimonialModalOpen(false)} className="flex-1 btn-secondary py-3 rounded-xl font-bold">
                     Cancelar
                   </button>
-                  <button type="submit" className="flex-1 btn-primary py-3 rounded-xl font-black uppercase italic">
-                    Salvar
+                  <button 
+                    type="submit" 
+                    disabled={isSyncing || isUploading}
+                    className="flex-1 btn-primary py-3 rounded-xl font-black uppercase italic disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {(isSyncing || isUploading) ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      'Salvar'
+                    )}
                   </button>
                 </div>
               </form>

@@ -42,14 +42,29 @@ export default function Home() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('Iniciando carregamento de dados do Supabase...');
         // Try to load from Supabase with cache busting
-        const { data: servicesData } = await supabase.from('services').select('*').order('id');
-        const { data: testimonialsData } = await supabase.from('testimonials').select('*').order('id', { ascending: false });
-        const { data: siteConfigData } = await supabase.from('site_config').select('*').eq('id', 1).single();
+        const { data: servicesData, error: sError } = await supabase.from('services').select('*').order('id');
+        const { data: testimonialsData, error: tError } = await supabase.from('testimonials').select('*').order('id', { ascending: false });
+        const { data: siteConfigData, error: cError } = await supabase.from('site_config').select('*').eq('id', 1).single();
+
+        if (sError) {
+          console.warn('Erro ao carregar serviços:', sError);
+          if (sError.code === '42P01') console.error('TABELA "services" NÃO EXISTE NO SUPABASE!');
+        }
+        if (tError) {
+          console.warn('Erro ao carregar depoimentos:', tError);
+          if (tError.code === '42P01') console.error('TABELA "testimonials" NÃO EXISTE NO SUPABASE!');
+        }
+        if (cError) {
+          console.warn('Erro ao carregar config:', cError);
+          if (cError.code === '42P01') console.error('TABELA "site_config" NÃO EXISTE NO SUPABASE!');
+        }
 
         let loadedFromSupabase = false;
 
         if (servicesData && servicesData.length > 0) {
+          console.log('Serviços carregados do Supabase:', servicesData.length);
           setServices(servicesData);
           loadedFromSupabase = true;
         } else {
@@ -58,7 +73,14 @@ export default function Home() {
         }
 
         if (testimonialsData && testimonialsData.length > 0) {
-          setTestimonials(testimonialsData);
+          console.log('Depoimentos carregados do Supabase:', testimonialsData.length);
+          // Map Supabase columns (content, avatar) to frontend properties (text, image)
+          const mappedTestimonials = testimonialsData.map((t: any) => ({
+            ...t,
+            text: t.content || t.text || '',
+            image: t.avatar || t.image || ''
+          }));
+          setTestimonials(mappedTestimonials);
           loadedFromSupabase = true;
         } else {
           const savedTestimonials = localStorage.getItem(STORAGE_KEYS.TESTIMONIALS);
@@ -121,26 +143,40 @@ export default function Home() {
     setIsSyncing(true);
     try {
       // If ID is very large, it's a temporary ID from Date.now(), so we let Supabase generate a real one
-      const isNew = service.id > 2147483647;
-      const { id, ...serviceData } = service;
+      const isNew = service.id > 2147483647 || service.id <= 0;
+      
+      // Explicitly pick fields and ensure types to avoid circular structures
+      const serviceData = {
+        category: String(service.category || ''),
+        title: String(service.title || ''),
+        description: String(service.description || ''),
+        price: Number(service.price || 0),
+        duration: String(service.duration || ''),
+        revisions: String(service.revisions || ''),
+        image: String(service.image || ''),
+        features: Array.isArray(service.features) ? [...service.features].map(f => String(f)) : []
+      };
       
       let result;
       if (isNew) {
-        result = await supabase.from('services').insert(serviceData).select().single();
+        result = await supabase.from('services').insert(serviceData).select();
       } else {
-        result = await supabase.from('services').upsert(service).select().single();
+        result = await supabase.from('services').upsert({ ...serviceData, id: service.id }).select();
       }
 
       const { data, error } = result;
-      if (error) throw error;
+      if (error) {
+        const errorMsg = `Erro ${error.code || '?'}: ${error.message || 'Erro desconhecido'}`;
+        console.error('Supabase error saving service:', error);
+        showToast('Erro do Banco', errorMsg);
+        return false;
+      }
       
-      const savedService = data as Service;
-      const updated = [...services];
-      const index = updated.findIndex(s => s.id === service.id);
-      
-      if (index !== -1) {
-        updated[index] = savedService;
-      } else {
+      const savedService = data?.[0] as Service;
+      if (!savedService) throw new Error('O servidor não retornou os dados salvos.');
+
+      const updated = services.map(s => s.id === service.id ? savedService : s);
+      if (!updated.find(s => s.id === savedService.id)) {
         updated.push(savedService);
       }
       
@@ -148,9 +184,9 @@ export default function Home() {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(updated));
       setHasLoadedFromSupabase(true);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving service:', error);
-      showToast('Erro', 'Não foi possível salvar o serviço.');
+      showToast('Erro ao Salvar', error.message || 'Erro desconhecido ao salvar o serviço.');
       return false;
     } finally {
       setIsSyncing(false);
@@ -181,20 +217,61 @@ export default function Home() {
     setIsSyncing(true);
     try {
       // If ID is very large, it's a temporary ID from Date.now(), so we let Supabase generate a real one
-      const isNew = testimonial.id > 2147483647;
-      const { id, ...testimonialData } = testimonial;
+      const isNew = testimonial.id > 2147483647 || testimonial.id <= 0;
+      
+      // Explicitly pick fields and ensure types to avoid circular structures
+      const testimonialData = {
+        name: String(testimonial.name || '').trim(),
+        company: String(testimonial.company || '').trim(),
+        content: String(testimonial.text || '').trim(),
+        rating: Math.floor(Number(testimonial.rating || 5)),
+        avatar: String(testimonial.image || '').trim()
+      };
+      
+      console.log('Tentando salvar depoimento no Supabase:', testimonialData);
       
       let result;
       if (isNew) {
-        result = await supabase.from('testimonials').insert(testimonialData).select().single();
+        result = await supabase.from('testimonials').insert(testimonialData).select();
       } else {
-        result = await supabase.from('testimonials').upsert(testimonial).select().single();
+        result = await supabase.from('testimonials').upsert({ ...testimonialData, id: testimonial.id }).select();
+      }
+
+      if (!result) {
+        console.error('Supabase result is undefined');
+        showToast('Erro Crítico', 'O servidor não respondeu à solicitação.');
+        return false;
       }
 
       const { data, error } = result;
-      if (error) throw error;
+      if (error) {
+        const errorMsg = `Erro ${error.code || '?'}: ${error.message || 'Erro desconhecido'}`;
+        console.error('Supabase error saving testimonial:', error);
+        showToast('Erro do Banco', errorMsg);
+        
+        if (error.code === '42P01') {
+          showToast('Tabela Faltando', 'A tabela "testimonials" não existe no seu Supabase.');
+        } else if (error.code === '42501') {
+          showToast('Permissão Negada', 'Verifique as políticas de RLS no seu Supabase.');
+        } else if (error.code === 'PGRST204') {
+          const missingCol = error.message.match(/'([^']+)'/)?.[1] || 'desconhecida';
+          showToast('Coluna Faltando', `A coluna "${missingCol}" está faltando na tabela "testimonials".`);
+          console.warn(`DICA SQL: ALTER TABLE testimonials ADD COLUMN ${missingCol} TEXT;`);
+        }
+        
+        return false;
+      }
       
-      const savedTestimonial = data as Testimonial;
+      const rawSaved = data?.[0];
+      if (!rawSaved) throw new Error('O servidor não retornou os dados salvos.');
+
+      // Map Supabase columns back to frontend properties
+      const savedTestimonial: Testimonial = {
+        ...rawSaved,
+        text: rawSaved.content || rawSaved.text || '',
+        image: rawSaved.avatar || rawSaved.image || ''
+      };
+
       const updated = [...testimonials];
       const index = updated.findIndex(t => t.id === testimonial.id);
       
@@ -208,9 +285,9 @@ export default function Home() {
       localStorage.setItem(STORAGE_KEYS.TESTIMONIALS, JSON.stringify(updated));
       setHasLoadedFromSupabase(true);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving testimonial:', error);
-      showToast('Erro', 'Não foi possível salvar o depoimento.');
+      showToast('Erro ao Salvar', error.message || 'Erro desconhecido ao salvar o depoimento.');
       return false;
     } finally {
       setIsSyncing(false);
@@ -267,7 +344,7 @@ export default function Home() {
         onOpenContact={() => setIsContactOpen(true)} 
       />
       
-      <Testimonials testimonials={testimonials} />
+      <Testimonials testimonials={testimonials.slice(0, 6)} />
       
       {/* CTA Final */}
       <section className="py-16 md:py-20 relative overflow-hidden bg-dark">

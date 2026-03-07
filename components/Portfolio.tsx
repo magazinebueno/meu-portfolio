@@ -12,6 +12,7 @@ interface PortfolioProps {
 }
 
 const CATEGORIES = ['Todos', 'Sites', 'Identidade Visual', 'Social Media', 'Marketing'];
+const FALLBACK_IMAGE = 'https://picsum.photos/seed/sia/800/600';
 
 export default function Portfolio({ services, onOpenService, onOpenContact }: PortfolioProps) {
   const [filter, setFilter] = useState('Todos');
@@ -57,7 +58,7 @@ export default function Portfolio({ services, onOpenService, onOpenContact }: Po
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/50 w-5 h-5" />
             <input 
               type="text" 
-              value={search}
+              value={search ?? ""}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar serviços (ex: site, logo, social media...)" 
               className="w-full input-field p-3 md:p-4 pl-12 rounded-xl outline-none text-sm"
@@ -106,8 +107,8 @@ export default function Portfolio({ services, onOpenService, onOpenContact }: Po
             >
               <div className="relative h-44 md:h-56 bg-dark flex-shrink-0 overflow-hidden">
                 <Image 
-                  src={s.image} 
-                  alt={s.title}
+                  src={s.image || FALLBACK_IMAGE} 
+                  alt={s.title || 'Serviço'}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
                   referrerPolicy="no-referrer"

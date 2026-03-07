@@ -4,6 +4,8 @@ import { Star, Quote } from 'lucide-react';
 import { Testimonial } from '@/lib/data';
 import Image from 'next/image';
 
+const FALLBACK_IMAGE = 'https://picsum.photos/seed/sia/800/600';
+
 interface TestimonialsProps {
   testimonials: Testimonial[];
 }
@@ -23,8 +25,8 @@ export default function Testimonials({ testimonials }: TestimonialsProps) {
               <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
                 <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
                   <Image 
-                    src={t.image} 
-                    alt={t.name}
+                    src={t.image || FALLBACK_IMAGE} 
+                    alt={t.name || 'Cliente'}
                     fill
                     className="rounded-full object-cover border-2 border-primary"
                     referrerPolicy="no-referrer"

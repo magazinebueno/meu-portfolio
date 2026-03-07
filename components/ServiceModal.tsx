@@ -5,6 +5,8 @@ import { Service, SiteData } from '@/lib/data';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 
+const FALLBACK_IMAGE = 'https://picsum.photos/seed/sia/800/600';
+
 interface ServiceModalProps {
   service: Service | null;
   onClose: () => void;
@@ -57,8 +59,8 @@ export default function ServiceModal({ service, onClose, contactData, onShowToas
           >
             <div className="relative h-48 md:h-72 bg-dark flex-shrink-0">
               <Image 
-                src={service.image} 
-                alt={service.title}
+                src={service.image || FALLBACK_IMAGE} 
+                alt={service.title || 'Serviço'}
                 fill
                 className="object-cover"
                 referrerPolicy="no-referrer"
